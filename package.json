@@ -1,0 +1,13 @@
+{
+  "name": "@sousy/daylines",
+  "version": "0.1.0",
+  "description": "Put anything you want to keep an eye on into your calendar, as all-day events",
+  "type": "module",
+  "bin": { "daylines": "bin/daylines" },
+  "files": ["bin/", "*.mjs", "README.md", "LICENSE"],
+  "scripts": { "test": "node --test test/*.test.mjs" },
+  "keywords": ["calendar", "ics", "webcal", "dashboard", "plausible", "even realities", "smart glasses"],
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "publishConfig": { "access": "public" }
+}

@@ -1,0 +1,178 @@
+#!/usr/bin/env node
+// daylines: put anything you want to keep an eye on into your calendar.
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const { CONFIG_FILE, loadConfig } = await import(join(ROOT, "config.mjs"));
+
+const LABEL = "dev.daylines.feed";
+const LAUNCH_AGENT = join(homedir(), "Library", "LaunchAgents", `${LABEL}.plist`);
+const SYSTEMD_UNIT = join(homedir(), ".config", "systemd", "user", "daylines.service");
+const LOG = join(homedir(), "Library", "Logs", "daylines.log");
+const HTTPS_PORT = Number(process.env.DAYLINES_HTTPS_PORT || 7443);
+const [cmd = "show", ...rest] = process.argv.slice(2);
+const mac = process.platform === "darwin";
+
+const commands = {
+  // Print what would be on the calendar right now.
+  async show() {
+    const cfg = loadConfig();
+    if (!cfg.sources.length) return console.log(`No sources yet. Add "sources" to ${CONFIG_FILE} (see the README).`);
+    const { readAll } = await import(join(ROOT, "sources.mjs"));
+    for (const line of await readAll(cfg.sources)) console.log(line);
+  },
+
+  async serve() {
+    const { startServer } = await import(join(ROOT, "server.mjs"));
+    startServer();
+  },
+
+  // Save a Plausible Stats API key for plausible sources.
+  async key() {
+    const { PLAUSIBLE_KEY_FILE } = await import(join(ROOT, "plausible.mjs"));
+    const key = await readHidden("Plausible Stats API key (input hidden): ");
+    if (!key) return console.log("No key entered; nothing changed.");
+    mkdirSync(dirname(PLAUSIBLE_KEY_FILE), { recursive: true });
+    writeFileSync(PLAUSIBLE_KEY_FILE, key + "\n", { mode: 0o600 });
+    console.log(`Saved to ${PLAUSIBLE_KEY_FILE}. Restart: daylines service restart`);
+  },
+
+  // Route the feed on this machine's *.ts.net name to the local server.
+  publish() {
+    const cfg = loadConfig();
+    for (const path of ["/feed.ics", "/api/stats.ics"]) {
+      const r = spawnSync("tailscale", ["serve", "--bg", `--https=${HTTPS_PORT}`, `--set-path=${path}`, `http://127.0.0.1:${cfg.port}${path}`], { stdio: "inherit" });
+      if (r.status !== 0) return (process.exitCode = r.status ?? 1);
+    }
+    console.log(`\nNow run: daylines url`);
+  },
+
+  url() {
+    const cfg = loadConfig();
+    const r = spawnSync("tailscale", ["status", "--json"], { encoding: "utf8" });
+    const dns = r.status === 0 ? JSON.parse(r.stdout).Self?.DNSName?.replace(/\.$/, "") : null;
+    if (!dns) return console.log("Tailscale isn't running, so the phone has no address to subscribe to.");
+    console.log("On iPhone: Settings > Apps > Calendar > Calendar Accounts > Add Account > Other > Add Subscribed Calendar, and paste:\n");
+    console.log(`webcal://${dns}:${HTTPS_PORT}/feed.ics?key=${cfg.token}`);
+    console.log("\nOn Android: add it in Google Calendar as a URL calendar, using https:// instead of webcal://.");
+  },
+
+  service() {
+    const sub = rest[0] || "status";
+    return mac ? launchd(sub) : systemd(sub);
+  },
+
+  help() {
+    console.log(`daylines                 print today's lines
+daylines key             save a Plausible Stats API key
+daylines serve           run the feed in the foreground
+daylines service         install | uninstall | restart | status
+daylines publish         serve the feed on this machine's *.ts.net name
+daylines url             print the subscribe link for the phone
+
+Config: ${CONFIG_FILE}`);
+  },
+};
+
+function launchd(sub) {
+  const uid = process.getuid();
+  if (sub === "install") {
+    const path = [dirname(process.execPath), "/opt/homebrew/bin", "/usr/local/bin", join(homedir(), ".local", "bin"), "/usr/bin", "/bin"].join(":");
+    const plist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>${LABEL}</string>
+  <key>ProgramArguments</key>
+  <array><string>${process.execPath}</string><string>${join(ROOT, "bin", "daylines")}</string><string>serve</string></array>
+  <key>EnvironmentVariables</key>
+  <dict><key>PATH</key><string>${path}</string></dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>${LOG}</string>
+  <key>StandardErrorPath</key><string>${LOG}</string>
+</dict>
+</plist>
+`;
+    spawnSync("launchctl", ["bootout", `gui/${uid}`, LAUNCH_AGENT], { stdio: "ignore" });
+    writeFileSync(LAUNCH_AGENT, plist);
+    const r = spawnSync("launchctl", ["bootstrap", `gui/${uid}`, LAUNCH_AGENT], { stdio: "inherit" });
+    return console.log(r.status === 0 ? `Installed ${LABEL}. Log: ${LOG}` : "launchctl failed");
+  }
+  if (sub === "uninstall") {
+    spawnSync("launchctl", ["bootout", `gui/${uid}`, LAUNCH_AGENT], { stdio: "ignore" });
+    return console.log(existsSync(LAUNCH_AGENT) ? `Stopped. Remove ${LAUNCH_AGENT} to forget it.` : "Not installed.");
+  }
+  if (sub === "restart") return spawnSync("launchctl", ["kickstart", "-k", `gui/${uid}/${LABEL}`], { stdio: "inherit" });
+  const r = spawnSync("launchctl", ["print", `gui/${uid}/${LABEL}`], { encoding: "utf8" });
+  console.log(r.status === 0 ? (r.stdout.match(/state = .*/)?.[0] ?? "loaded") : "not installed");
+}
+
+function systemd(sub) {
+  if (sub === "install") {
+    mkdirSync(dirname(SYSTEMD_UNIT), { recursive: true });
+    writeFileSync(
+      SYSTEMD_UNIT,
+      `[Unit]
+Description=daylines feed
+
+[Service]
+ExecStart=${process.execPath} ${join(ROOT, "bin", "daylines")} serve
+Restart=always
+
+[Install]
+WantedBy=default.target
+`,
+    );
+    spawnSync("systemctl", ["--user", "daemon-reload"], { stdio: "inherit" });
+    spawnSync("systemctl", ["--user", "enable", "--now", "daylines"], { stdio: "inherit" });
+    return;
+  }
+  const map = { uninstall: ["disable", "--now"], restart: ["restart"], status: ["status"] };
+  spawnSync("systemctl", ["--user", ...(map[sub] || ["status"]), "daylines"], { stdio: "inherit" });
+}
+
+function readHidden(prompt) {
+  return new Promise((resolve) => {
+    const stdin = process.stdin;
+    process.stdout.write(prompt);
+    if (!stdin.isTTY) {
+      let data = "";
+      stdin.on("data", (c) => (data += c));
+      stdin.on("end", () => resolve(data.trim()));
+      return;
+    }
+    let value = "";
+    stdin.setRawMode(true);
+    stdin.resume();
+    stdin.setEncoding("utf8");
+    const onData = (ch) => {
+      if (ch === "\r" || ch === "\n" || ch === "") {
+        stdin.setRawMode(false);
+        stdin.pause();
+        stdin.off("data", onData);
+        process.stdout.write("\n");
+        resolve(value.trim());
+      } else if (ch === "") {
+        process.stdout.write("\n");
+        process.exit(130);
+      } else if (ch === "") {
+        value = value.slice(0, -1);
+      } else {
+        value += ch;
+      }
+    };
+    stdin.on("data", onData);
+  });
+}
+
+if (!commands[cmd]) {
+  commands.help();
+  process.exitCode = 1;
+} else {
+  await commands[cmd]();
+}
