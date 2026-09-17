@@ -19,10 +19,15 @@
     "calendar",
     "ics",
     "webcal",
+    "icalendar",
     "dashboard",
-    "plausible",
+    "metrics",
+    "widget",
+    "lock screen",
+    "smart glasses",
     "even realities",
-    "smart glasses"
+    "plausible",
+    "self-hosted"
   ],
   "license": "MIT",
   "engines": {

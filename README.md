@@ -1,8 +1,8 @@
 # Daylines
 
 Put anything you want to keep an eye on into your calendar, as all-day events for
-today. Your phone's calendar widget then shows it on the lock screen, and smart
-glasses that render your calendar show it too.
+today. Anything that shows your calendar then shows them: your phone's lock screen,
+your watch, your car, a wall display, your glasses.
 
 ```
 Sousy 51 visits · 2 App Store · 1 Play
@@ -16,10 +16,19 @@ your phone subscribes to.
 
 ## Why a calendar
 
-Smart glasses, watches and lock screens all render calendars, and most of them
-won't let you add a custom widget. Even Realities G2, for example, has a Calendar
-widget on its dashboard but no way for an app to draw there. A subscribed calendar
-gets your numbers onto that screen with no app to open.
+Almost every screen you own already renders your calendar, and almost none of them
+let you add a custom widget. A subscribed calendar is the way in, with no app to
+install on the device and nothing to open.
+
+That means the same feed shows up on:
+
+- your phone's lock screen and home screen widgets
+- your watch complications
+- your car, when it reads out or displays today's schedule
+- a TV or wall display running a calendar dashboard
+- Google Calendar, Outlook, Fantastical and anything else that takes a URL
+- smart glasses. Even Realities G2, for example, has a Calendar widget on its
+  dashboard but no way for an app to draw there
 
 ## Install
 
