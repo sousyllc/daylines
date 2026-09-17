@@ -8,7 +8,7 @@ glasses that render your calendar show it too.
 Sousy 51 visits · 2 App Store · 1 Play
 Sousy iOS 5★ · 4 ratings
 CI passing
-San Antonio 99°F high
+New York 78°F high
 ```
 
 It runs on your own computer. Nothing is sent anywhere except the calendar feed
@@ -39,7 +39,7 @@ lines, and every line becomes an all-day event.
   "refreshMinutes": 10,
   "sources": [
     { "label": "CI", "command": "gh run list -R you/repo -L1 --json conclusion -q .[0].conclusion" },
-    { "label": "Weather", "url": "https://api.open-meteo.com/v1/forecast?latitude=29.42&longitude=-98.49&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=auto&forecast_days=1", "pick": "daily.temperature_2m_max.0", "format": "{label} {value}°F high" }
+    { "label": "Weather", "url": "https://api.open-meteo.com/v1/forecast?latitude=40.71&longitude=-74.01&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=auto&forecast_days=1", "pick": "daily.temperature_2m_max.0", "format": "{label} {value}°F high" }
   ]
 }
 ```

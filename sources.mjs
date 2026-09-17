@@ -2,7 +2,7 @@
 //
 //   { "label": "CI",    "command": "gh run list -L1 --json conclusion -q .[0].conclusion" }
 //   { "label": "npm",   "url": "https://api.npmjs.org/downloads/point/last-day/@sousy/glancecode", "pick": "downloads" }
-//   { "label": "Sousy", "type": "plausible", "site": "sousy.com", "visitors": {} }
+//   { "label": "Shop",  "type": "plausible", "site": "example.com", "visitors": {} }
 //
 // Every source produces one or more lines, and each line becomes an all-day event.
 import { exec } from "node:child_process";
