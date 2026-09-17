@@ -4,10 +4,14 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const XDG = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
-export const CONFIG_DIR = join(XDG, "daylines");
+/** Read at call time, so tests can point XDG_CONFIG_HOME somewhere temporary. */
+export function configDir() {
+  return join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "daylines");
+}
+
+export const CONFIG_DIR = configDir();
 export const CONFIG_FILE = join(CONFIG_DIR, "config.json");
-const LEGACY_DIR = join(XDG, "site-stats");
+const LEGACY_DIR = join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "site-stats");
 
 export const DEFAULTS = {
   // Feed server on 127.0.0.1. Phones reach it through tailscale serve.

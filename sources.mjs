@@ -7,6 +7,7 @@
 // Every source produces one or more lines, and each line becomes an all-day event.
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { expandSource } from "./keys.mjs";
 import { Plausible } from "./plausible.mjs";
 
 const run = promisify(exec);
@@ -58,8 +59,10 @@ async function fromUrl(source) {
  * Read one source. Never throws: a broken source shows its own error on the
  * calendar, so a failing command can't empty the whole feed.
  */
-export async function readSource(source) {
+export async function readSource(raw) {
+  let source = raw;
   try {
+    source = expandSource(raw); // {key:name} becomes the saved secret
     if (source.type === "plausible" || (!source.command && !source.url && source.site)) return await new Plausible().lines(source);
     if (source.command) return await fromCommand(source);
     if (source.url) return await fromUrl(source);

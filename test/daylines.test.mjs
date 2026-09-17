@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import { foldLine, ics } from "../feed.mjs";
 import { fill, pick, readSource } from "../sources.mjs";
@@ -17,6 +20,20 @@ test("a failing source reports itself instead of emptying the feed", async () =>
   const lines = await readSource({ label: "CI", command: "exit 3" });
   assert.equal(lines.length, 1);
   assert.match(lines[0], /^CI: /);
+});
+
+test("a saved key expands into a source, and a missing one says so", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "daylines-"));
+  process.env.XDG_CONFIG_HOME = dir;
+  const { expandSource, listKeys, saveKey } = await import("../keys.mjs?keys");
+  saveKey("example", "s3cret");
+  assert.deepEqual(listKeys(), ["example"]);
+  assert.equal(statSync(join(dir, "daylines", "keys", "example")).mode & 0o777, 0o600);
+  const source = expandSource({ label: "Sales", url: "https://api.example.com", headers: { Authorization: "Bearer {key:example}" } });
+  assert.equal(source.headers.Authorization, "Bearer s3cret");
+  assert.throws(() => expandSource({ url: "https://x/{key:missing}" }), /no key named "missing"/);
+  const lines = await readSource({ label: "Sales", url: "https://api.example.com/{key:missing}" });
+  assert.match(lines[0], /^Sales: no key named "missing"/);
 });
 
 test("pick walks a path and fill substitutes fields", () => {

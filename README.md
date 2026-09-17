@@ -66,6 +66,17 @@ response body is used, which suits an endpoint that returns a bare number. Add
 **Both** accept `format`, a template over the source's own fields plus `{value}`,
 for example `"{label}: {value} open"`.
 
+**Secrets** stay out of the config. `daylines key <name>` saves one to its own file
+under `~/.config/daylines/keys` with mode 600, and `{key:<name>}` anywhere in a
+source is replaced with it:
+
+```json
+{ "label": "Sales", "url": "https://api.example.com/today",
+  "headers": { "Authorization": "Bearer {key:example}" }, "pick": "total" }
+```
+
+`daylines key` on its own lists what you have saved.
+
 A source that fails puts its own error on the calendar instead of emptying the feed,
 so you can tell the difference between zero and broken.
 
@@ -93,7 +104,7 @@ minutes, otherwise it can be lazy about refreshing.
 ## Examples
 
 **Site traffic (Plausible).** A built-in source, since it needs a signed request.
-Create a Stats API key in Plausible, save it with `daylines key`, then:
+Create a Stats API key in Plausible, save it with `daylines key plausible`, then:
 
 ```json
 { "label": "Shop", "type": "plausible", "site": "example.com",
@@ -160,7 +171,7 @@ number of words you wrote today. If a command prints it, it can be on your calen
 
 ```
 daylines                 print today's lines
-daylines key             save a Plausible Stats API key
+daylines key <name>      save a secret, used in sources as {key:<name>}
 daylines serve           run the feed in the foreground
 daylines service         install | uninstall | restart | status
 daylines publish         serve the feed on this machine's *.ts.net name

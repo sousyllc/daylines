@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- `daylines key <name>` saves any secret, not only a Plausible key, and `{key:name}`
+  in a source is replaced with it. Existing Plausible keys move themselves into the
+  new keys folder on first run.
+
 ## 0.1.0
 
 First release.

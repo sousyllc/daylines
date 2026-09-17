@@ -7,12 +7,8 @@
 //
 // The Stats API matches goals by their display name, so list the display name first
 // and the raw event name after it as a fallback.
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { CONFIG_DIR } from "./config.mjs";
+import { readKey } from "./keys.mjs";
 import { fill } from "./sources.mjs";
-
-export const PLAUSIBLE_KEY_FILE = join(CONFIG_DIR, "plausible.key");
 
 export function today(d = new Date()) {
   return d.toLocaleDateString("en-CA"); // YYYY-MM-DD in this machine's timezone
@@ -24,11 +20,7 @@ export class Plausible {
   }
 
   get key() {
-    try {
-      return existsSync(PLAUSIBLE_KEY_FILE) ? readFileSync(PLAUSIBLE_KEY_FILE, "utf8").trim() : "";
-    } catch {
-      return "";
-    }
+    return readKey("plausible");
   }
 
   async query(body) {
@@ -58,7 +50,7 @@ export class Plausible {
 
   /** One line for the source, e.g. "Shop 120 visits · 4 App Store · 2 Play". */
   async lines(source) {
-    if (!this.key) throw new Error("no API key, run: daylines key");
+    if (!this.key) throw new Error("no API key, run: daylines key plausible");
     const date = today();
     const parts = {};
     const errors = [];

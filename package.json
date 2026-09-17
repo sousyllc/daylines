@@ -1,6 +1,6 @@
 {
   "name": "@sousy/daylines",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Put anything you want to keep an eye on into your calendar, as all-day events",
   "type": "module",
   "bin": {

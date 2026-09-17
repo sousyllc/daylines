@@ -31,14 +31,19 @@ const commands = {
     startServer();
   },
 
-  // Save a Plausible Stats API key for plausible sources.
+  // Save a secret a source needs, referenced in the config as {key:name}.
   async key() {
-    const { PLAUSIBLE_KEY_FILE } = await import(join(ROOT, "plausible.mjs"));
-    const key = await readHidden("Plausible Stats API key (input hidden): ");
-    if (!key) return console.log("No key entered; nothing changed.");
-    mkdirSync(dirname(PLAUSIBLE_KEY_FILE), { recursive: true });
-    writeFileSync(PLAUSIBLE_KEY_FILE, key + "\n", { mode: 0o600 });
-    console.log(`Saved to ${PLAUSIBLE_KEY_FILE}. Restart: daylines service restart`);
+    const { keysDir, listKeys, saveKey } = await import(join(ROOT, "keys.mjs"));
+    const name = rest[0];
+    if (!name) {
+      const saved = listKeys();
+      console.log(`Usage: daylines key <name>\n\nUse it in a source as {key:<name>}, for example\n  "headers": { "Authorization": "Bearer {key:example}" }\n\nThe built-in Plausible source reads the key named "plausible".`);
+      console.log(saved.length ? `\nSaved keys in ${keysDir()}: ${saved.join(", ")}` : `\nNo keys saved yet.`);
+      return;
+    }
+    const value = await readHidden(`Value for "${name}" (input hidden): `);
+    if (!value) return console.log("Nothing entered; nothing changed.");
+    console.log(`Saved to ${saveKey(name, value)}. Restart: daylines service restart`);
   },
 
   // Route the feed on this machine's *.ts.net name to the local server.
@@ -68,7 +73,7 @@ const commands = {
 
   help() {
     console.log(`daylines                 print today's lines
-daylines key             save a Plausible Stats API key
+daylines key <name>      save a secret, used in sources as {key:<name>}
 daylines serve           run the feed in the foreground
 daylines service         install | uninstall | restart | status
 daylines publish         serve the feed on this machine's *.ts.net name
