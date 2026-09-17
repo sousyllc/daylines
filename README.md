@@ -6,8 +6,8 @@ glasses that render your calendar show it too.
 
 ```
 Sousy 51 visits · 2 App Store · 1 Play
+Sousy iOS 5★ · 4 ratings
 CI passing
-off my chest 4.8★ · 35 ratings
 San Antonio 99°F high
 ```
 
@@ -97,11 +97,11 @@ Every count is unique visitors for today. The Stats API matches goals by their
 display name, so list the display name first and the raw event name after it.
 Leave `visitors` as `{}` to count everyone.
 
-**App Store rating and review count.** Find your numeric app id in its store URL.
+**App Store rating and review count.** Find your numeric app id in its store URL, or look it up with `curl -s "https://itunes.apple.com/search?term=your+app&entity=software" | jq -r ".results[] | \"\(.trackId) \(.trackName)\""`.
 
 ```json
-{ "label": "off my chest",
-  "command": "curl -s 'https://itunes.apple.com/lookup?id=6796612807&country=us' | jq -r '.results[0] | if .userRatingCount == 0 then \"no ratings yet\" else \"\\((.averageUserRating*10|round)/10)★ · \\(.userRatingCount) ratings\" end'" }
+{ "label": "Sousy iOS",
+  "command": "curl -s 'https://itunes.apple.com/lookup?id=6746349702&country=us' | jq -r '.results[0] | if .userRatingCount == 0 then \"no ratings yet\" else \"\\((.averageUserRating*10|round)/10)★ · \\(.userRatingCount) ratings\" end'" }
 ```
 
 **Is the build green.**
